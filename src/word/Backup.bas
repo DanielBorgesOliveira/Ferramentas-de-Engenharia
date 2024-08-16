@@ -1,18 +1,10 @@
 Attribute VB_Name = "Backup"
-Option Explicit
-
 Sub BackupModules()
-
     ' Set the export path (you can change this to your desired backup location)
     Dim FolderInputPath As String
     FolderInputPath = Library.UseFolderDialog
 
     ' Check if the export path exists, if not, create it
-    If Dir(FolderInputPath, vbDirectory) = "" Then
-        MkDir FolderInputPath
-    End If
-
-     ' Check if the export path exists, if not, create it
     If Dir(FolderInputPath, vbDirectory) = "" Then
         MkDir FolderInputPath
     End If
@@ -35,6 +27,32 @@ Sub BackupModules()
         ' Export the module to the specified path
         vbComp.Export FolderInputPath & "\" & strModuleName
     Next vbComp
+
+    ' Copy the current document to the backup folder
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    
+    Dim currentDoc As Document
+    Dim sourceFilePath As String
+    Dim destFilePath As String
+
+    ' Get the current document
+    Set currentDoc = ActiveDocument
+    sourceFilePath = currentDoc.FullName
+
+    ' Ensure the destination folder path ends with a backslash
+    If Right(FolderInputPath, 1) <> "\" Then
+        FolderInputPath = FolderInputPath & "\"
+    End If
+
+    ' Create the destination file path
+    destFilePath = FolderInputPath & fso.GetFileName(sourceFilePath)
+    
+    ' Copy the file
+    fso.CopyFile sourceFilePath, destFilePath
+
+    ' Clean up
+    Set fso = Nothing
 
     Dim FolderOutputPath As String
     FolderOutputPath = Library.UseFolderDialog & "\FinishHim-" & Format(Now(), "DD-MMM-YYYY-hh-mm-ss") & ".zip"

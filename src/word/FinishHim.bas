@@ -68,54 +68,18 @@ Sub FinishHim()
     End If
     
     ' ************************************ Adiciona Cabeçalho e Rodapé ************************************ '
-    If UserForm1.HeaderVale And UserForm1.ResolverComentarios Then
-        If UserForm1.Cliente = "Vale" Then
-            Call Vale.setupStyles
-            Call Vale.setupPage
-            Call Vale.addHeader
-        ElseIf UserForm1.Cliente = "Anglo American" Then
-            Call AngloAmerican.setupStyles
-            Call AngloAmerican.setupPage
-            Call AngloAmerican.addHeader
-            Call AngloAmerican.AddFooter
+    If UserForm1.convertVale Then
+        If UserForm1.ResolverComentarios Then
+            If UserForm1.Cliente = "Vale" Then
+                Call Vale.finish
+            ElseIf UserForm1.Cliente = "Anglo American" Then
+                Call AngloAmerican.finish
+            End If
+        Else
+            MsgBox "O documento não será convertido para o padrão do cliente, pois os comentários não foram resolvido."
         End If
-    Else
-        MsgBox "Aviso: Não será adicionado o cabeçalho, pois os comentários não foram resolvido."
     End If
     ' ************************************ ******** ********* * ****** ************************************ '
-    
-    ' ************************************ AddTabelaRevisao ************************************ '
-    If UserForm1.TabelaRevisaoVale And UserForm1.ResolverComentarios Then
-        If UserForm1.Cliente = "Vale" Then
-            Call Vale.setupStyles
-            Call Vale.setupPage
-            Call Vale.addRevisionTable
-        ElseIf UserForm1.Cliente = "Anglo American" Then
-            Call AngloAmerican.setupStyles
-            Call AngloAmerican.setupPage
-            Call AngloAmerican.addRevisionTable
-        End If
-    Else
-        MsgBox "Aviso: Não será adicionado a tabela de revisão, pois os comentários não foram resolvido."
-    End If
-    ' ************************************ **************** ************************************ '
-    
-    ' ************************************ Adiciona TOC ************************************ '
-    If UserForm1.TOC And UserForm1.ResolverComentarios Then
-        If UserForm1.Cliente = "Vale" Then
-            Call Vale.setupStyles
-            Call Vale.setupPage
-            Call Vale.addTOC
-        ElseIf UserForm1.Cliente = "Anglo American" Then
-            Call AngloAmerican.setupStyles
-            Call AngloAmerican.setupPage
-            Call AngloAmerican.addHeader
-            'Call AngloAmerican.addTOC
-        End If
-    Else
-        MsgBox "Aviso: Não será adicionado o TOC, pois os comentários não foram resolvido."
-    End If
-    ' ************************************ ******** *** ************************************ '
     
     Dim Warning As String
     

@@ -2,7 +2,39 @@ Attribute VB_Name = "AngloAmerican"
 'Option Explicit
 Option Private Module
 
-Sub AddFooter()
+Sub finish()
+    If Not Library.propertyExists("NumeroCliente") Or _
+    Not Library.propertyExists("Titulo1") Or _
+    Not Library.propertyExists("Titulo2") Or _
+    Not Library.propertyExists("Titulo3") Or _
+    Not Library.propertyExists("Titulo4") Or _
+    Not Library.propertyExists("Titulo5") Or _
+    Not Library.propertyExists("NumeroNosso") Or _
+    Not Library.propertyExists("NumeroCliente") Or _
+    Not Library.propertyExists("Revisao") Or _
+    Not Library.propertyExists("Projeto") Then
+        MsgBox "Um ou todos os campos do documento não estão definidos (Titulo1,Titulo2, Cliente, Projetom, Revisão, etc.)"
+        Exit Sub
+    End If
+    
+    Call Library.DeleteCustomStyles
+    Library.Sleep 500
+    Call setupPage
+    Library.Sleep 500
+    Call setupStyles
+    Library.Sleep 500
+    'Call updateClientText
+    'Library.Sleep 500
+    Call addHeader
+    Library.Sleep 500
+    Call addFooter
+    Library.Sleep 500
+    Call addRevisionTable
+    'Library.Sleep 500
+    'Call addTOC
+End Sub
+
+Sub addFooter()
     ' Check if the document has a primary header
     If ActiveDocument.Sections(1).Footers(wdHeaderFooterPrimary).Exists Then
         ' Set the header range
@@ -190,13 +222,13 @@ Sub addHeader()
                 .cell(Row:=1, Column:=3).Merge MergeTo:=.cell(Row:=1, Column:=4)
                 .cell(Row:=2, Column:=1).Merge MergeTo:=.cell(Row:=5, Column:=2)
                 
-                Call Library.InsertImage(getAngloLogoBase64(), .cell(Row:=1, Column:=1).Range)
+                Call Library_Image.InsertImage(getAngloLogoBase64(), .cell(Row:=1, Column:=1).Range)
                 .cell(Row:=1, Column:=1).Range.style = "8ptCenter"
                 
                 Dim FileInputPath As String
                 FileInputPath = Library.UseFileDialog(msoFileDialogFilePicker)
                 
-                Call Library.InsertImage(EncodeFile(FileInputPath), .cell(Row:=1, Column:=2).Range)
+                Call Library_Image.InsertImage(EncodeFile(FileInputPath), .cell(Row:=1, Column:=2).Range)
                 .cell(Row:=1, Column:=2).Range.style = "8ptCenter"
                 
                 .cell(Row:=1, Column:=3).Range.InsertAfter ActiveDocument.CustomDocumentProperties("Projeto")
