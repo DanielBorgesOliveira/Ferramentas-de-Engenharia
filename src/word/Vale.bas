@@ -282,7 +282,7 @@ Sub addHeader()
             .cell(Row:=1, Column:=2).Merge MergeTo:=.cell(Row:=2, Column:=2)
             .cell(Row:=3, Column:=1).Merge MergeTo:=.cell(Row:=6, Column:=3)
             
-            Call Library_Image.InsertImage(getValeLogoBase64(), .cell(Row:=1, Column:=1).Range)
+            Call Library.InsertImage(getValeLogoBase64(), .cell(Row:=1, Column:=1).Range)
             .cell(Row:=1, Column:=1).Range.style = "8ptCenter"
             
             MsgBox "Indique o logo da empresa para ser incluído no cabeçalho."
@@ -290,7 +290,7 @@ Sub addHeader()
             Dim FileInputPath As String
             FileInputPath = Library.UseFileDialog(msoFileDialogFilePicker)
             
-            Call Library_Image.InsertImage(EncodeFile(FileInputPath), .cell(Row:=1, Column:=2).Range)
+            Call Library.InsertImage(EncodeFile(FileInputPath), .cell(Row:=1, Column:=2).Range)
             .cell(Row:=1, Column:=2).Range.style = "8ptCenter"
             
             ' Insert text and styles

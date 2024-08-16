@@ -190,13 +190,13 @@ Sub addHeader()
                 .cell(Row:=1, Column:=3).Merge MergeTo:=.cell(Row:=1, Column:=4)
                 .cell(Row:=2, Column:=1).Merge MergeTo:=.cell(Row:=5, Column:=2)
                 
-                Call Library_Image.InsertImage(getAngloLogoBase64(), .cell(Row:=1, Column:=1).Range)
+                Call Library.InsertImage(getAngloLogoBase64(), .cell(Row:=1, Column:=1).Range)
                 .cell(Row:=1, Column:=1).Range.style = "8ptCenter"
                 
                 Dim FileInputPath As String
                 FileInputPath = Library.UseFileDialog(msoFileDialogFilePicker)
                 
-                Call Library_Image.InsertImage(EncodeFile(FileInputPath), .cell(Row:=1, Column:=2).Range)
+                Call Library.InsertImage(EncodeFile(FileInputPath), .cell(Row:=1, Column:=2).Range)
                 .cell(Row:=1, Column:=2).Range.style = "8ptCenter"
                 
                 .cell(Row:=1, Column:=3).Range.InsertAfter ActiveDocument.CustomDocumentProperties("Projeto")
