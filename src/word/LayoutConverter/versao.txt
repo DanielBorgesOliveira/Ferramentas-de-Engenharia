@@ -1,2 +1,2 @@
 Versao=0.1
-Link=https://github.com/DanielBorgesOliveira/Ferramentas-de-Engenharia/blob/main/src/Word/LayoutConverter.zip
+Link=https://raw.githubusercontent.com/DanielBorgesOliveira/Ferramentas-de-Engenharia/main/src/word/LayoutConverter/LayoutConverter.zip
