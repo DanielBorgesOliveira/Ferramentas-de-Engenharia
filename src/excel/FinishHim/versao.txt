@@ -1,0 +1,2 @@
+Versao=0.1
+Link=https://raw.githubusercontent.com/DanielBorgesOliveira/Ferramentas-de-Engenharia/main/src/excel/FinishHim/FinishHim.xlsm

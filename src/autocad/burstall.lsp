@@ -1,0 +1,6 @@
+(defun c:burstall (/ ss )
+(if (setq ss (ssget "_X" '((0 . "INSERT") (66 . 1))))
+  (LM:burst ss)
+  )
+(princ)
+)
