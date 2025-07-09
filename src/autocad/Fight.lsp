@@ -8,8 +8,7 @@
 (command "DATALINKUPDATE" "_U" "_K")
 ;(command "_ATTSYNC" "Name" "A1")
 (command "TILEMODE" "0") ; Move to paper space.
-; Rename the current layout to  document's name.
-(c:RenameLayoutToDocName)
+(c:RenameLayoutToDocName) ; Rename the current layout to  document's name.
 (command "ZOOM" "E") ; Zoom extents
 (command "UCS" "_W") ; Reset UCS to original position
 (command "mspace") ; Acess model space

@@ -1,2 +1,2 @@
-Versao=0.2
+Versao=0.3
 Link=https://raw.githubusercontent.com/DanielBorgesOliveira/Ferramentas-de-Engenharia/main/src/excel/LayoutConverter/LayoutConverter.zip

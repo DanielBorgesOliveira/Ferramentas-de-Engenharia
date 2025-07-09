@@ -1,2 +1,2 @@
-Versao=0.1
-Link=https://raw.githubusercontent.com/DanielBorgesOliveira/Ferramentas-de-Engenharia/main/src/word/FinishHim/FinishHim.xlsm
+Versao=0.2
+Link=https://raw.githubusercontent.com/DanielBorgesOliveira/Ferramentas-de-Engenharia/main/src/word/FinishHim/FinishHim.docm
