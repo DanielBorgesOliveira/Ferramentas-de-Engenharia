@@ -158,3 +158,4 @@ input("Press enter to continue...")
 # Copia todos os tags (linhas, válvulas, tie-ins, etc.) para a planilha Sheet1. A formatação deve ser do tupo texto, ou o PROCV pode ter problemas para encontrar os valores.
 # Filtra a coluna "Verificação DataExtraction->GerenciamentoTag" da tabela "DataExtraction" com os valores "#N/A". Nessa coluna temos os tags nosso.
 # Rode o macro ProcurarEColorirLinhas para marcar as linhas na planilha GerenciamentoTag que deverão ser deletadas
+# Verifique as linhas marcadas para remoção em relação a planilha de ID, pois podem haver tags nessa planilha que não devem ser removidos.
