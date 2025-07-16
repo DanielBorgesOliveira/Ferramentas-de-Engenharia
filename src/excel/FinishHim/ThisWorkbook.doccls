@@ -1,0 +1,52 @@
+﻿Private Sub Workbook_Open()
+    Dim http As Object
+    Dim versaoAtual As String
+    Dim versaoRemota As String
+    
+    Dim linhas() As String
+    Dim linha As Variant
+
+    versaoAtual = "0.1" ' Altere conforme a versão desta planilha
+    
+    Dim linkDownload As String
+    
+
+    ' Cria objeto HTTP
+    Set http = CreateObject("MSXML2.XMLHTTP")
+    On Error GoTo erro
+
+    ' URL onde está o arquivo de controle de versão
+    http.Open "GET", "https://raw.githubusercontent.com/DanielBorgesOliveira/Ferramentas-de-Engenharia/refs/heads/main/src/excel/FinishHim/versao.txt", False
+    http.Send
+
+    If http.Status = 200 Then
+        ' Normaliza para vbLf
+        Dim texto As String
+        texto = Replace(http.responseText, vbCrLf, vbLf)
+        texto = Replace(texto, vbCr, vbLf)
+    
+        linhas = Split(texto, vbLf)
+        
+        For Each linha In linhas
+            If InStr(1, linha, "Versao=", vbTextCompare) > 0 Then
+                versaoRemota = Trim(Split(linha, "=")(1))
+            ElseIf InStr(1, linha, "Link=", vbTextCompare) > 0 Then
+                linkDownload = Trim(Split(linha, "=")(1))
+            End If
+        Next linha
+        
+        If versaoRemota > versaoAtual Then
+            MsgBox "Há uma nova versão disponível (" & versaoRemota & ")." & vbCrLf & _
+                   "Após clicar em OK será realizado o download a nova versão." & vbCrLf & _
+                    "Descompacte o arquivo e substitua a versão anterior.", _
+                   vbInformation, "Atualização Disponível"
+
+            ThisWorkbook.FollowHyperlink Address:=linkDownload, NewWindow:=True
+        End If
+    End If
+
+    Exit Sub
+
+erro:
+    MsgBox "Não foi possível verificar atualizações: " & Err.Description, vbExclamation
+End Sub
