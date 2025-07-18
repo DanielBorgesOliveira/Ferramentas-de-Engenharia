@@ -165,15 +165,16 @@ Sub CopyToFile(DirName As String, fileName As String, DataSheet As Worksheet)
     
     Dim CsvWorkbook As Workbook
     Set CsvWorkbook = Workbooks.Add
+	
     CsvWorkbook.Sheets(1).Paste
-    
-    Call SetWidth(CsvWorkbook.Sheets(1).Range("BK:BK"), 65)
-    Call SetHeight(CsvWorkbook.Sheets(1).Range("A2", Range("A2").End(xlDown)), 65)
-    
-    Call Hide(CsvWorkbook.Sheets(1), CsvWorkbook.Sheets(1).Range("A:C,H:J,L:BG"))
     
     CsvWorkbook.SaveAs fileName:=DirName & "\" & fileName & ".xlsx", FileFormat:=51, local:=True
     CsvWorkbook.Close SaveChanges:=True
+End Sub
+
+Sub SetWidth(rng As Range, Wight As Integer)
+    rng.ColumnWidth = Wight
+    'DataSheet.ColumnS("BJ:BJ").ColumnWidth = Wight
 End Sub
 
 Sub Hide(DataSheet As Worksheet, R As Range)
@@ -183,8 +184,6 @@ End Sub
 Sub UnhideAll(DataSheet As Worksheet)
     DataSheet.Columns.EntireColumn.Hidden = False
     DataSheet.rows.EntireRow.Hidden = False
-    ' Oculta as linhas que não são importantes para nós.
-    DataSheet.rows("1:3").EntireRow.Hidden = True
 End Sub
 
 Private Sub CloseWorkbook(File As String)
@@ -192,16 +191,6 @@ Private Sub CloseWorkbook(File As String)
   'Close method has additional parameters
   'Workbooks.Close(SaveChanges, Filename, RouteWorkbook)
   'Help page: https://docs.microsoft.com/en-us/office/vba/api/excel.workbook.close
-End Sub
-
-Private Sub PressEnter()
-    Dim Range00 As Range
-    Set Range00 = Worksheets("LD").Range("BJ5", Range("BJ5").End(xlDown))
-    For Each c In Range00.Cells
-        ActiveCell.FormulaR1C1 = _
-        "=CONCAT(RC[-23],CHAR(10),RC[-21],CHAR(10),RC[-20],CHAR(10),RC[-19],CHAR(10))"
-        Worksheets("LD").Range("BJ" & c.row).Select
-    Next
 End Sub
 
 Function IsInCollection(oCollection As Collection, sItem As String) As Boolean
@@ -216,18 +205,15 @@ Function IsInCollection(oCollection As Collection, sItem As String) As Boolean
 End Function
 
 Public Function CollectionToArray(myCol As Collection) As Variant
- 
-    Dim result  As Variant
-    Dim cnt     As Long
- 
+	Dim result  As Variant
     ReDim result(myCol.count - 1)
  
+	Dim cnt As Long
     For cnt = 0 To myCol.count - 1
         result(cnt) = myCol(cnt + 1)
     Next cnt
  
     CollectionToArray = result
-    
 End Function
 
 Function CheckWorkbook(WorkbookName As String) As Boolean
@@ -243,7 +229,6 @@ Function CheckWorkbook(WorkbookName As String) As Boolean
 End Function
 
 Function Duplicated(rng As Range) As Boolean
-    
     Dim myArray As Variant
     myArray = UniqueItems(rng)
 
@@ -306,23 +291,20 @@ Sub RefreshPivotTables(wb As Workbook)
     ' Refresh all connections and Pivot Tables in the workbook
     wb.RefreshAll
     
-    Dim ws As Worksheet
-    Dim pt As PivotTable
+    'Dim ws As Worksheet
+    'Dim pt As PivotTable
     
     ' Loop through each worksheet
-    For Each ws In wb.Worksheets
-        ' Loop through each Pivot Table in the worksheet
-        For Each pt In ws.PivotTables
-            ' Refresh the Pivot Table
-            pt.RefreshTable
-            pt.Update
-            
-            ' Show the name of the Pivot Table in a message box or immediate window (Debug.Print)
-            ' MsgBox "Pivot Table refreshed: " & pt.name
-            ' Alternatively, use the following line to print the name in the Immediate Window (Ctrl + G)
-            ' Debug.Print "Pivot Table refreshed: " & pt.Name
-        Next pt
-    Next ws
+    'For Each ws In wb.Sheets
+    '    ' Loop through each Pivot Table in the worksheet
+    '    For Each pt In ws.PivotTables
+    '        ' Refresh the Pivot Table
+    '        pt.PivotCache.Refresh
+    '
+    '        ' Show the name of the Pivot Table
+    '        ' Debug.Print "Pivot Table refreshed: " & pt.Name
+    '    Next pt
+    'Next ws
 End Sub
 
 Sub ScreenUpdateOff()
@@ -365,21 +347,32 @@ Function GetSelectedItems(lBox As MSForms.ListBox) As Variant
     End If
 End Function
 
-Function GUID$(Optional lowercase As Boolean, Optional parens As Boolean)
+Function GUID$(Optional lowercase As Boolean, Optional parens As Boolean, Optional Size = 36)
     Dim k&, h$
-    GUID = Space(36)
+    GUID = Space(Size)
     For k = 1 To Len(GUID)
         Randomize
         Select Case k
-            Case 9, 14, 19, 24: h = "-"
+            'Case 9, 14, 19, 24: h = "-"
             Case 15:            h = "4"
-            Case 20:            h = Hex(rnd * 3 + 8)
-            Case Else:          h = Hex(rnd * 15)
+            Case 20:            h = Hex(Rnd * 3 + 8)
+            Case Else:          h = Hex(Rnd * 15)
         End Select
         Mid$(GUID, k, 1) = h
     Next
     If lowercase Then GUID = LCase$(GUID)
     If parens Then GUID = "{" & GUID & "}"
+End Function
+
+Function UniqueGUID(Optional Size = 36) As String
+    Dim newGUID As String
+    Do
+        newGUID = GUID$(Size:=Size)
+    Loop While generatedGUIDs.Exists(newGUID)
+    
+    generatedGUIDs.Add newGUID, Nothing
+    
+    UniqueGUID = newGUID
 End Function
 
 Function TrustVBAAccess() As Boolean
@@ -473,28 +466,63 @@ Sub BackupModules(fileName As String)
     'MsgBox "Backup completed successfully!", vbInformation
 End Sub
 
-Sub ExportSheetToNewWorkbook(wsSource As Worksheet, fileName As String, filePath As String)
-    ' Create a new workbook for exporting the data
-    Dim wbExport As Workbook
-    Set wbExport = Workbooks.Add
+Function ExportSheetToNewWorkbook(ws As Worksheet, fileName As String, filePath As String) As Workbook
+    Dim wb As Workbook
+    On Error GoTo ErrorHandler
+
+    ' Validate file path
+    If Dir(filePath, vbDirectory) = "" Then
+        MsgBox "Invalid file path: " & filePath, vbCritical, "Export Error"
+        Exit Function
+    End If
+
+    ' Clean invalid characters from filename
+    fileName = Replace(fileName, "\", "_")
+    fileName = Replace(fileName, "/", "_")
+    fileName = Replace(fileName, "?", "_")
+    fileName = Replace(fileName, "*", "_")
     
-    ' Remove default sheet in the new workbook if necessary
+    ' Check combined file path length
+    If Len(filePath & "\" & fileName & ".xlsx") > 260 Then
+        MsgBox "File path is too long. Please use a shorter path or name.", vbCritical, "Export Error"
+        Exit Function
+    End If
+
+    ' Check if the file already exists
+    If Dir(filePath & "\" & fileName & ".xlsx") <> "" Then
+        MsgBox "The file '" & fileName & "' already exists. Please use a different name or close the file.", vbCritical, "Export Error"
+        Exit Function
+    End If
+
+    ' Create a new workbook for exporting the data
+    Set wb = Workbooks.Add
+
+    ' Copy the entire source worksheet to the new workbook
+    ws.Copy Before:=wb.Sheets(1) ' Copies the entire worksheet
+    
+    ' Remove default sheets in the new workbook (after copying)
     Application.DisplayAlerts = False
-    'wbExport.Sheets(1).Delete
+    Dim sh As Worksheet
+    For Each sh In wb.Sheets
+        If sh.name <> ws.name Then
+            sh.Visible = xlSheetVisible ' Ensure the sheet is visible
+            sh.Delete
+        End If
+    Next sh
     Application.DisplayAlerts = True
     
-    ' Copy the entire source worksheet to the new workbook
-    wsSource.Copy before:=wbExport.Sheets(1) ' Copies the entire worksheet
-    
-    ' Rename the new sheet if needed (optional)
-    'wbExport.Sheets(1).name = fileName
-    
     ' Save the new workbook as an .xlsx file
-    wbExport.SaveAs fileName:=filePath & "\" & fileName, FileFormat:=xlOpenXMLWorkbook, local:=True
+    wb.SaveAs fileName:=filePath & "\" & fileName & ".xlsx", FileFormat:=xlOpenXMLWorkbook, Local:=True
     
-    ' Close the new workbook after saving
-    wbExport.Close SaveChanges:=True
-End Sub
+    ' Return the new workbook to the user
+    Set ExportSheetToNewWorkbook = wb
+    Exit Function
+
+ErrorHandler:
+    If Not wb Is Nothing Then wb.Close SaveChanges:=False
+    MsgBox "Error during export: " & Err.Description, vbCritical, "Export Error"
+    Set ExportSheetToNewWorkbook = Nothing
+End Function
 
 Function ListSheets(wb As Workbook, Optional ignoreList As Variant = Empty) As Variant
     Dim Worksheets() As String
@@ -675,21 +703,468 @@ Sub ExportAllWorksheetsAsPDF(wb As Workbook, OutputFile As String)
     If wb.Saved = False Then wb.Save
 End Sub
 
-Sub DeleteAllShapes(ws As Worksheet, KeepShapeName As String)
-    Dim shp As Shape ' Variable to hold each shape during the loop
+Sub DumpArrayToWorksheet(ws As Worksheet, startCell As Range, Data As Variant)
+    ' Error handling block
+    On Error GoTo ErrorHandler
+    
+    ' Ensure the input is an array and it is allocated
+    If Not IsArray(Data) Or Not IsArrayAllocated(Data) Then
+        MsgBox "The provided data is not a properly allocated array.", vbCritical
+        Exit Sub
+    End If
 
-    On Error Resume Next ' Prevent the code from stopping due to unexpected errors
+    ' Variables to determine the size of the array
+    Dim numRows As Long, numCols As Long
+    
+    ' Detect whether the array is 1D or 2D by attempting to access the second dimension
+    On Error Resume Next
+    Dim test As Variant
+    test = UBound(Data, 2)
+    If Err.Number = 0 Then
+        ' No error means it's a 2D array
+        numRows = UBound(Data, 1) - LBound(Data, 1) + 1
+        numCols = UBound(Data, 2) - LBound(Data, 2) + 1
+    Else
+        ' Error occurred, indicating it's a 1D array
+        ' Here we set numRows to the size of the array and numCols to 1 to write the array vertically
+        numRows = UBound(Data, 1) - LBound(Data, 1) + 1
+        numCols = 1
+    End If
+    On Error GoTo ErrorHandler  ' Resume regular error handling
 
-    ' Loop through all shapes in the specified worksheet
+    ' Resize the destination range according to array dimensions
+    Dim destinationRange As Range
+    Set destinationRange = startCell.Resize(numRows, numCols)
+
+    ' Write the array to the specified worksheet range
+    If numCols = 1 Then
+        ' If it's a 1D array, transform it to a 2D array for column output
+        Dim columnArray() As Variant
+        ReDim columnArray(1 To numRows, 1 To 1)
+        Dim i As Long
+        For i = 1 To numRows
+            columnArray(i, 1) = Data(i + LBound(Data, 1) - 1)
+        Next i
+        destinationRange.value = columnArray
+    Else
+        ' If it's a 2D array, output directly
+        destinationRange.value = Data
+    End If
+
+    ' Exit the subroutine cleanly
+    Exit Sub
+
+ErrorHandler:
+    ' Handle errors by displaying an error message
+    MsgBox "Error in DumpArrayToWorksheet: " & Err.Description, vbCritical
+End Sub
+
+Function IsArrayAllocated(arr As Variant) As Boolean
+	' Utility function to check if an array is properly allocated
+    ' This function checks if the provided variable is an allocated array.
+    On Error Resume Next ' Enable error handling to prevent runtime errors from breaking the function
+    
+    ' IsArray checks if the variable is an array
+    ' LBound and UBound are used to determine if there are accessible indices in the array
+    ' If arr is not an array or is an unallocated array, these functions will raise an error
+    IsArrayAllocated = IsArray(arr) And _
+                       Not IsError(LBound(arr, 1)) And _
+                       Not IsError(UBound(arr, 1)) And _
+                       LBound(arr, 1) <= UBound(arr, 1)
+    
+    On Error GoTo 0 ' Turn off error handling
+End Function
+
+Sub Extend2DArray(targetArray As Variant, Optional xPlaces = 1, Optional yPlaces = 0, Optional LBase = 0)
+    On Error GoTo err_handler
+
+    ' If adding rows, we need to create a new array and copy over the old data
+    If xPlaces > 0 Then
+        Dim tempArray As Variant
+        tempArray = targetArray
+        
+        ' Resize the array with extra rows and columns
+        ReDim targetArray( _
+            LBound(tempArray, 1) To UBound(tempArray, 1) + xPlaces, _
+            LBound(tempArray, 2) To UBound(tempArray, 2) + yPlaces _
+        )
+        
+        ' Copy data from the old array to the new array
+        Dim i As Long, j As Long
+        For i = LBound(tempArray, 1) To UBound(tempArray, 1)
+            For j = LBound(tempArray, 2) To UBound(tempArray, 2)
+                targetArray(i, j) = tempArray(i, j)
+            Next j
+        Next i
+    Else
+        ' Only expand columns if rows are not being expanded
+        ReDim Preserve targetArray( _
+            LBound(targetArray, 1) To UBound(targetArray, 1), _
+            LBound(targetArray, 2) To UBound(targetArray, 2) + yPlaces _
+        )
+    End If
+
+    Exit Sub
+
+err_handler:
+    ' If the array is not yet initialized, initialize with default size
+    ReDim targetArray(LBase To LBase + xPlaces - 1, LBase To LBase + yPlaces - 1)
+End Sub
+
+
+Sub CheckArraySize(targetArray As Variant)
+    Dim rowCount As Long
+    Dim colCount As Long
+    
+    ' Get the number of rows (1st dimension)
+    rowCount = UBound(targetArray, 1) - LBound(targetArray, 1) + 1
+    
+    ' Get the number of columns (2nd dimension)
+    colCount = UBound(targetArray, 2) - LBound(targetArray, 2) + 1
+    
+    ' Output the size of the array
+    Debug.Print "Rows: " & rowCount
+    Debug.Print "Columns: " & colCount
+End Sub
+
+Function IsInArray(stringToBeFound As String, ByRef arr As Variant, column As Integer) As Boolean
+    ' Check if the array is actually an array and has at least one dimension
+    If Not IsArray(arr) Then
+        IsInArray = False
+        Exit Function
+    End If
+
+    ' Check if the column index is within the range of array dimensions
+    If column > UBound(arr, 2) Or column < LBound(arr, 2) Then
+        IsInArray = False
+        Exit Function
+    End If
+
+    ' Check if the first element of the specified column is initialized (if array is 2D)
+    If IsEmpty(arr(LBound(arr, 1), column)) Then
+        IsInArray = False
+        Exit Function
+    End If
+
+    ' Initialize the loop variable
+    Dim i As Variant
+
+    ' Loop through the array from its lower bound to its upper bound
+    For i = LBound(arr, 1) To UBound(arr, 1)
+        ' Check if the string is found in the specified column
+        If arr(i, column) = stringToBeFound Then
+            IsInArray = True
+            Exit Function
+        End If
+    Next i
+
+    ' If the string was not found, return False
+    IsInArray = False
+End Function
+
+Function GetWorkbookLocalPath(wb As Workbook) As String
+    ' Returns the local path for the workbook, resolving OneDrive paths if necessary
+    Const strOneDrivePart As String = "https://"
+    Dim localPath As String
+    Dim remotePath As String
+    Dim oneDriveLocalPath As String
+    Dim relativePath As String
+    Dim slashPos As Long
+
+    ' Initialize with workbook's path
+    remotePath = wb.Path
+
+    ' Check if the workbook is on OneDrive
+    If Left(LCase(remotePath), Len(strOneDrivePart)) = strOneDrivePart Then
+        ' Attempt to get the local OneDrive path from the environment variable
+        On Error Resume Next
+        oneDriveLocalPath = Environ("OneDriveCommercial") ' For OneDrive for Business
+        If oneDriveLocalPath = "" Then
+            oneDriveLocalPath = Environ("OneDrive") ' Fallback for personal OneDrive
+        End If
+        On Error GoTo 0
+
+        ' If the OneDrive path exists, transform the remote path into a local path
+        If oneDriveLocalPath <> "" Then
+            ' Locate the relative path starting after the base URL
+            slashPos = InStr(Len(strOneDrivePart) + 1, remotePath, "/Documents")
+            If slashPos > 0 Then
+                ' Extract the relative path after "/Documents"
+                relativePath = Mid(remotePath, slashPos + Len("/Documents"))
+                ' Concatenate the OneDrive local folder with the relative path
+                localPath = oneDriveLocalPath & Replace(relativePath, "/", "\")
+                localPath = Replace(localPath, "%20", " ") ' Decode spaces
+            Else
+                ' If "/Documents" is not found, return an error
+                localPath = "Error: Unable to locate 'Documents' in the OneDrive path."
+            End If
+        Else
+            ' OneDrive path not found, return an error message
+            localPath = "Error: Unable to resolve OneDrive local path."
+        End If
+    Else
+        ' If not on OneDrive, simply return the workbook path
+        localPath = remotePath
+    End If
+
+    ' Return the resolved local path
+    GetWorkbookLocalPath = localPath
+End Function
+
+Sub SetWorkingDirectory(folderPath As String)
+    On Error Resume Next
+    ChDir folderPath
+    If Err.Number <> 0 Then
+        Debug.Print "Error: Unable to set working directory to " & folderPath
+        Err.Clear
+    Else
+        Debug.Print "Working directory set to " & folderPath
+    End If
+    On Error GoTo 0
+End Sub
+
+Sub DeleteAllShapes(ws As Worksheet, Optional KeepShapeName As String = "")
+    '******************************************************
+    ' DeleteAllShapes - Deletes shapes from a worksheet.
+    '
+    ' Description:
+    '   This subroutine deletes all shapes from the provided worksheet,
+    '   except those whose names contain a specified substring.
+    '
+    ' Parameters:
+    '   ws            - The worksheet from which shapes will be deleted.
+    '   KeepShapeName - (Optional) A substring to check within each shape's name.
+    '                   If a shape's name includes this substring, it is not deleted.
+    '                   Defaults to an empty string, meaning all shapes are deleted.
+    '
+    ' Returns:
+    '   None.
+    '
+    ' Notes:
+    '   Error handling is enabled to continue execution if an error occurs
+    '   during the deletion process.
+    '******************************************************
+    
+    ' Declare a variable to hold each shape object as we loop through them.
+    Dim shp As Shape
+
+    ' Enable error handling so that if an error occurs (for example,
+    ' trying to delete a shape that doesn't exist), the code continues to run.
+    On Error Resume Next
+
+    ' Loop through every shape in the Shapes collection of the worksheet.
     For Each shp In ws.Shapes
-        ' Check if the shape's name does not contain the specified name (KeepShapeName)
-        ' If the name does not match, delete the shape
-        If InStr(1, shp.Name, KeepShapeName, vbTextCompare) = 0 Then
-            shp.Delete ' Delete the shape
+        ' Output the name of the current shape to the Immediate Window.
+        ' This is useful for debugging purposes.
+        Debug.Print shp.name
+        
+        ' Check the following condition:
+        ' - If the optional parameter KeepShapeName is empty, then the condition is true,
+        '   and the shape will be deleted.
+        ' - If KeepShapeName is not empty, then we check if it is NOT found in the shape's name.
+        '   The InStr function returns 0 if the substring is not found.
+        If KeepShapeName = "" Or InStr(1, shp.name, KeepShapeName, vbTextCompare) = 0 Then
+            ' Delete the shape if it doesn't match the criteria.
+            shp.Delete
         End If
     Next shp
 
-    On Error GoTo 0 ' Turn off error handling after the loop
+    ' Turn off the custom error handling so that any future errors are handled normally.
+    On Error GoTo 0
+
+End Sub
+
+
+Sub insertNote(targetCell As Range, note As String)
+    If Not targetCell Is Nothing Then
+        ' Remove existing comment if any
+        If Not targetCell.Comment Is Nothing Then
+            targetCell.Comment.Delete
+        End If
+
+        ' Add new note
+        targetCell.AddComment note
+    End If
+End Sub
+
+Function CopyWorksheetsToNewWorkbook(wb As Workbook, fileName As String, filePath As String) As Workbook
+    Dim newWorkbook As Workbook
+    Dim ws As Worksheet
+    Dim savePath As Variant
+    
+    ' Create a new workbook
+    Set newWorkbook = Workbooks.Add
+    
+    ' Loop through each worksheet in the specified workbook
+    For Each ws In wb.Worksheets
+        ' Copy each sheet to the new workbook
+        ws.Copy After:=newWorkbook.Sheets(newWorkbook.Sheets.count)
+    Next ws
+    
+    ' Optionally, you can delete the initial empty worksheet in the new workbook
+    Application.DisplayAlerts = False ' Disable alerts to suppress the confirmation dialog
+    newWorkbook.Sheets(1).Delete
+    Application.DisplayAlerts = True ' Re-enable alerts
+    
+    Call RemoveAllButtonsInWorkbook(newWorkbook)
+    Call ConnectAllSlicersToAllPivotTables(newWorkbook)
+    
+    newWorkbook.SaveAs fileName:=filePath & "\" & fileName & ".xlsx", FileFormat:=xlOpenXMLWorkbook, Local:=True
+    
+    Set CopyWorksheetsToNewWorkbook = newWorkbook
+    ' Show save as dialog
+    'savePath = Application.GetSaveAsFilename(FileFilter:="Excel Files (*.xlsx), *.xlsx")
+    
+    'If savePath <> False Then ' Check if the user didn't cancel the save dialog
+    '    'newWorkbook.SaveAs fileName:=savePath, FileFormat:=xlOpenXMLWorkbook
+    '
+    '    newWorkbook.Close ' Optional: Close the new workbook after saving
+    'Else
+    '    MsgBox "Save cancelled, the workbook will not be saved."
+    '    newWorkbook.Close False ' Close without saving
+    'End If
+End Function
+
+Sub ConnectAllSlicersToAllPivotTables(wb As Workbook)
+    Dim sc As slicerCache
+    Dim ws As Worksheet
+    Dim pt As PivotTable
+
+    ' Loop through all slicer caches in the workbook
+    For Each sc In wb.SlicerCaches
+        ' Loop through all worksheets in the workbook
+        For Each ws In wb.Worksheets
+            ' Loop through all pivot tables in each worksheet
+            For Each pt In ws.PivotTables
+                On Error Resume Next ' Ignore errors and continue
+                sc.PivotTables.AddPivotTable pt
+                If Err.Number <> 0 Then
+                    ' Optional: Log the error or just clear it
+                    Debug.Print "ConnectAllSlicersToAllPivotTables[ERROR]: Error connecting PivotTable '" & pt.name & "' in the worksheet '" & ws.name & "' to SlicerCache '" & sc.name & "': " & Err.Description
+                    Err.Clear ' Clear the error so it does not affect further processing
+                End If
+                On Error GoTo 0 ' Turn off error ignoring after critical section
+            Next pt
+        Next ws
+    Next sc
+End Sub
+
+Function findStringInRange(lookupString As String, rng As Range) As Integer
+    If rng Is Nothing Then
+        Debug.Print "findStringInRange: Range vazio."
+        findStringInRange = -1
+        Exit Function
+    End If
+    ' Search for a string in a range and return its row number.
+    Dim LookupValue As Variant
+    LookupValue = Application.Match( _
+        lookupString, _
+        rng, _
+        False _
+    )
+
+    If IsError(LookupValue) Then
+        findStringInRange = -1
+        Debug.Print "A string " & lookupString & " não foi encontrada no range indicado."
+    Else
+        findStringInRange = LookupValue
+    End If
+End Function
+
+Function FilterArray(Data As Variant, checkColumn As Integer, searchString As String, Optional header As Boolean = False) As Variant
+    ' Filters and input array and return the sub array.
+    
+    ' Determine the number of columns in the input array
+    Dim dataColCount As Integer
+    dataColCount = UBound(Data, 2)
+    
+    ' Determine the number of rows in the input array
+    Dim dataRowCount As Integer
+    dataRowCount = UBound(Data, 1)
+    
+    Dim output() As Variant
+    Call Library.Extend2DArray(targetArray:=output, xPlaces:=1, yPlaces:=dataColCount)
+    
+    ' Initialize row counter for output array
+    Dim rowCount As Integer
+    rowCount = 0
+    
+    Dim j As Long
+    If header Then
+        ' Copy the entire row to the output array
+        For j = LBound(Data, 2) To dataColCount
+            output(rowCount, j - 1) = Data(1, j)
+        Next j
+        
+        rowCount = rowCount + 1
+    End If
+    
+    Dim i As Long
+    ' Loop through each row in the input array
+    For i = LBound(Data, 1) To dataRowCount
+        ' Add error handling to catch invalid column access
+        On Error GoTo ErrorHandler
+        ' Check if the Bucket value in the specified column matches searchString
+        If Data(i, checkColumn) = searchString Then
+            ' Increase size of output array to accommodate another row
+            Call Library.Extend2DArray(targetArray:=output, xPlaces:=1, yPlaces:=0)
+            
+            ' Copy the entire row to the output array
+            For j = LBound(Data, 2) To dataColCount
+                output(rowCount, j - 1) = Data(i, j)
+            Next j
+            
+            rowCount = rowCount + 1
+        End If
+        On Error GoTo 0
+    Next i
+    
+    ' Return the filtered array or an empty array if no matches were found
+    If rowCount = 1 Then ' Check if row count was not incremented
+        ReDim output(1 To 1, 1 To dataColCount) ' Return an empty array with the same number of columns
+    End If
+
+    FilterArray = output
+    Exit Function
+
+ErrorHandler:
+    Debug.Print "Error accessing data array. Index: " & i & ", Column: " & checkColumn & ", Error: " & Err.Description
+    Resume Next
+End Function
+
+Sub RemoveAllButtonsInWorkbook(wb As Workbook)
+    Dim ws As Worksheet
+    Dim buttonCount As Integer
+    Dim totalRemoved As Integer
+    Dim errorCheck As Boolean
+    
+    ' Loop through each worksheet in the workbook
+    For Each ws In wb.Worksheets
+        ' Count buttons before deletion for feedback
+        buttonCount = ws.Buttons.count
+        
+        ' Attempt to delete all buttons on the current worksheet
+        On Error Resume Next
+        ws.Buttons.Delete
+        If Err.Number <> 0 Then
+            errorCheck = True
+            MsgBox "An error occurred on " & ws.name & ": " & Err.Description, vbCritical
+            Err.Clear ' Clear the error.
+        End If
+        On Error GoTo 0  ' Turn off error ignoring
+        
+        ' Calculate total buttons removed
+        totalRemoved = totalRemoved + buttonCount
+    Next ws
+    
+    ' Provide feedback to the user about the operation
+    If Not errorCheck Then
+        If totalRemoved > 0 Then
+            Debug.Print totalRemoved & " buttons were successfully deleted from the workbook."
+        Else
+            Debug.Print "No buttons were found to delete in the entire workbook."
+        End If
+    End If
 End Sub
 
 Sub DeleteAllNotes(ws As Worksheet)
@@ -1108,48 +1583,32 @@ Sub insertText(wb As Workbook, ws As Worksheet, rng As Range)
     Next
 End Sub
 
-Sub ProtectWorksheet(wb As Workbook, Optional ws As Worksheet = Nothing, Optional lockedRange As Range = Nothing, Optional password As String = "Abcd1234")
-    Dim targetSheet As Worksheet
-    Dim sheetList As Collection
-    Set sheetList = New Collection
+Sub ProtectWorksheet(ws As Worksheet, Optional lockedRange As Range = Nothing, Optional password As String = "Abcd1234")
+    ' Unprotect first (in case it's protected)
+    ws.Unprotect password
 
-    ' Determine which sheets to protect
-    If ws Is Nothing Then
-        ' Protect all worksheets
-        For Each targetSheet In wb.Worksheets
-            sheetList.Add targetSheet
-        Next targetSheet
-    Else
-        sheetList.Add ws
+    ' Lock the provided range if specified
+    If Not lockedRange Is Nothing Then
+        lockedRange.Locked = True
     End If
 
-    ' Apply protection
-    For Each targetSheet In sheetList
-        With targetSheet
-            .Unprotect password ' In case it's already protected
-            .Protect _
-                password:=password, _
-                DrawingObjects:=True, _
-                Contents:=True, _
-                UserInterfaceOnly:=False, _
-                AllowFormattingCells:=False, _
-                AllowFormattingColumns:=False, _
-                AllowFormattingRows:=False, _
-                AllowInsertingColumns:=False, _
-                AllowInsertingRows:=False, _
-                AllowInsertingHyperlinks:=False, _
-                AllowDeletingColumns:=False, _
-                AllowDeletingRows:=False, _
-                AllowSorting:=False, _
-                AllowFiltering:=False, _
-                AllowUsingPivotTables:=False
-            
-            ' Lock the provided range if specified (only on single sheet mode)
-            If Not lockedRange Is Nothing And sheetList.count = 1 Then
-                lockedRange.Locked = True
-            End If
-        End With
-    Next targetSheet
+    ' Now protect the sheet
+    Call ws.Protect( _
+        password:=password, _
+        Contents:=True, _
+        UserInterfaceOnly:=True, _
+        AllowFormattingCells:=True, _
+        AllowFormattingColumns:=True, _
+        AllowFormattingRows:=True, _
+        AllowInsertingColumns:=True, _
+        AllowInsertingRows:=True, _
+        AllowInsertingHyperlinks:=True, _
+        AllowDeletingColumns:=True, _
+        AllowDeletingRows:=True, _
+        AllowSorting:=True, _
+        AllowFiltering:=True, _
+        AllowUsingPivotTables:=True _
+    )
 End Sub
 
 
